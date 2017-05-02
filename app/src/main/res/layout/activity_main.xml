@@ -5,12 +5,20 @@
     android:layout_height="match_parent"
     tools:context="edu.utep.cs.cs4330.carpro.MainActivity">
 
+    <EditText
+        android:id="@+id/deviceNameField"
+        android:text="@string/obdii_device_name"
+        android:gravity="center"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerInParent="true"
+        android:layout_above="@+id/butt"/>
+
     <Button
         android:id="@+id/butt"
-        android:text="@string/connect_obdii_label"
+        android:text="@string/connect"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_centerInParent="true"
         android:onClick="connect"/>
-
 </RelativeLayout>

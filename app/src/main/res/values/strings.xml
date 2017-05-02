@@ -1,4 +1,5 @@
 <resources>
     <string name="app_name">CarPro</string>
-    <string name="connect_obdii_label">Connect to OBDII</string>
+    <string name="connect">Connect</string>
+    <string name="obdii_device_name">Device name</string>
 </resources>

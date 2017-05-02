@@ -12,43 +12,45 @@ import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
+import android.widget.EditText;
 
 public class MainActivity extends AppCompatActivity {
-    private boolean hasBluetooth;
-    private BluetoothAdapter bluetoothAdapter;
+    private EditText deviceNameField;
+    private BluetoothAdapter bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
     android.content.IntentFilter intentFilter;
     java.util.Set<BluetoothDevice> pairedDevices;
+    private final String LOG_TAG = "testme";
 
     /* ************************************************************************************
        ************************************************************************************ */
     /*
      * The following section is reserved for Android operations: power, discovery, and connectivity
      */
-    /* Creates the MainActivity of CarPro: registers broadcast receiver for bluetooth */
+    /* Creates the IGIVEUPONLIFEivity of CarPro: registers broadcast receiver for bluetooth */
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        deviceNameField = (EditText) findViewById(R.id.deviceNameField);
         setUpBluetoothAdapter();
-        hasBluetooth = hasBluetooth();
     }
 
-    /* Resumes the MainActivity of CarPro: registers broadcast receiver for bluetooth */
+    /* Resumes the IGIVEUPONLIFEivity of CarPro: registers broadcast receiver for bluetooth */
     @Override
     protected void onResume() {
         super.onResume();
-        registerReceiver(receiver, intentFilter);
+        registerReceiverForBT(); //registers this receiver for bluetooth state changes
     }
 
-    /* Pauses the MainActivity of CarPro: unregisters broadcast receiver for bluetooth */
+    /* Pauses the IGIVEUPONLIFEivity of CarPro: unregisters broadcast receiver for bluetooth */
     @Override
     protected void onPause() {
         super.onPause();
         unregisterReceiver(receiver);
     }
 
-    /* Destroys the MainActivity of CarPro: unregisters broadcast receiver for bluetooth */
+    /* Destroys the IGIVEUPONLIFEivity of CarPro: unregisters broadcast receiver for bluetooth */
     @Override
     protected void onDestroy() {
         super.onDestroy();
@@ -60,6 +62,7 @@ public class MainActivity extends AppCompatActivity {
        ************************************************************************************ */
     /*
      * The following section is reserved for Bluetooth Connectivity
+     * This includes: BroadcastReceiver, pairedDevices, etc.
      */
     /* The BroadcastReceiver that listens for bluetooth connection changes */
     private final android.content.BroadcastReceiver receiver = new android.content.BroadcastReceiver() {
@@ -67,33 +70,25 @@ public class MainActivity extends AppCompatActivity {
         public void onReceive(android.content.Context context, Intent intent) {
             String action = intent.getAction();
             BluetoothDevice d = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
+            Log.d(LOG_TAG,"Device name in extra: " +d.getName());
             if ( d.ACTION_FOUND.equals(action) ) {
-                Log.d("MAINACT","Found device " + d.getName());
+                Log.d(LOG_TAG,"Found device " + d.getName());
             } else if ( d.ACTION_ACL_CONNECTED.equals(action) ) {
-                Log.d("MAINACT", "connected");
-            } else if ( bluetoothAdapter.ACTION_DISCOVERY_FINISHED.equals(action) ) {
-                Log.d("MAINACT", "discovery complete");
+                Log.d(LOG_TAG, "connected");
+            } else if ( BluetoothAdapter.ACTION_DISCOVERY_FINISHED.equals(action) ) {
+                Log.d(LOG_TAG, "discovery complete");
             } else if ( d.ACTION_ACL_DISCONNECT_REQUESTED.equals(action) ) {
-                Log.d("MAINACT", "disconnecting");
+                Log.d(LOG_TAG, "disconnecting");
             } else if ( d.ACTION_ACL_DISCONNECTED.equals(action) ) {
-                Log.d("MAINACT", "disconnected");
+                Log.d(LOG_TAG, "disconnected");
             }
         }
     };
 
-    /* Acquires Bluetooth Adapter */
-    private void setUpBluetoothAdapter() {
-        bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
-    }
-
-    /* Checks if the local device has bluetooth functionality */
-    private boolean hasBluetooth() {
-        return bluetoothAdapter!=null;
-    }
-
     /* Turns on Bluetooth and Connects to a device by registering the receiver for connectivity */
-    private void connectToBluetooth() {
+    private void registerReceiverForBT() {
         //BT functionality preparation
+        Log.d(LOG_TAG,"Registering receiver on d/c, c, and d/c req...");
         intentFilter = new android.content.IntentFilter();
         intentFilter.addAction(BluetoothDevice.ACTION_ACL_CONNECTED);
         intentFilter.addAction(BluetoothDevice.ACTION_ACL_DISCONNECT_REQUESTED);
@@ -137,9 +132,54 @@ public class MainActivity extends AppCompatActivity {
 
     /* Connects on User command */
     public void connect(android.view.View v) {
-        if ( hasBluetooth )
-            connectToBluetooth();
-        else
+        Log.d(LOG_TAG,"connect pressed");
+        if ( !hasBluetooth() )
             toast("No Bluetooth functionality.");
+        else {
+            listPairedDevices();
+            if ( canConnectTo(deviceNameField.getText().toString()) ) {
+                saveDeviceName(deviceNameField.getText().toString());
+                connectToDevice(deviceNameField.getText().toString());
+            }
+        }
+    }
+
+    /* Checks if the remote device name is available and an OBDII */
+    private boolean canConnectTo(String name) {
+        //todo later add more devices
+        return true;
+    }
+
+    /* Saves this device to connect to directly */
+    private void saveDeviceName(String name) {
+        //todo save to app/os
+    }
+
+    /* Builds a connection to the remote device for receiving data */
+    private void connectToDevice(String name) {
+        //build connection
+    }
+
+
+    /* ************************************************************************************
+       ************************************************************************************ */
+    /*
+     * The following section is reserved for helper methods on the Bluetooth Functionality.
+     */
+    /* Acquires Bluetooth Adapter for the local device */
+    private void setUpBluetoothAdapter() {
+        bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
+    }
+
+    /* Checks if the local device has bluetooth functionality */
+    private boolean hasBluetooth() {
+        return bluetoothAdapter!=null;
+    }
+
+    /* Displays the list of paired devices to the local device */
+    private void listPairedDevices() {
+        pairedDevices = bluetoothAdapter.getBondedDevices();
+        for ( BluetoothDevice d : pairedDevices )
+            Log.d(LOG_TAG,"Bonded with: " +d.getName());
     }
 }
