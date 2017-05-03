@@ -8,6 +8,7 @@ package edu.utep.cs.cs4330.carpro;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -19,6 +20,7 @@ public class MainActivity extends AppCompatActivity {
     private BluetoothAdapter bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
     android.content.IntentFilter intentFilter;
     java.util.Set<BluetoothDevice> pairedDevices;
+    SharedPreferences.Editor editor;
     private final String LOG_TAG = "testme";
 
     /* ************************************************************************************
@@ -31,8 +33,15 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-
         deviceNameField = (EditText) findViewById(R.id.deviceNameField);
+
+        SharedPreferences pref = getApplicationContext().getSharedPreferences("MyPref", 0); // 0 - for private mode
+        editor = pref.edit();
+
+        if(pref.contains("username")){
+            deviceNameField.setText(pref.getString("username", null));
+        }
+
         setUpBluetoothAdapter();
     }
 
@@ -152,7 +161,8 @@ public class MainActivity extends AppCompatActivity {
 
     /* Saves this device to connect to directly */
     private void saveDeviceName(String name) {
-        //todo save to app/os
+        editor.putString("username", deviceNameField.getText().toString());
+        editor.commit();
     }
 
     /* Builds a connection to the remote device for receiving data */
