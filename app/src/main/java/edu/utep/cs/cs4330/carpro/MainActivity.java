@@ -149,8 +149,15 @@ public class MainActivity extends AppCompatActivity {
             if ( canConnectTo(deviceNameField.getText().toString()) ) {
                 saveDeviceName(deviceNameField.getText().toString());
                 connectToDevice(deviceNameField.getText().toString());
+                startActivity();
             }
         }
+    }
+
+    /* Start the next activity */
+    private void startActivity(){
+        Intent intent = new Intent(this, DisplayActivity.class);
+        startActivity(intent);
     }
 
     /* Checks if the remote device name is available and an OBDII */
