@@ -70,7 +70,12 @@ public class DisplayActivity extends AppCompatActivity {
         connection.cancel();
     }
 
-    /* Thread to maintain the connection to OBDII */
+
+    /* ************************************************************************************
+       ************************************************************************************ */
+    /*
+     * The following section is the private class for maintaing the bluetooth connection.
+     */
     private class ConnectThread extends Thread {
         private final BluetoothSocket socket;
         private final BluetoothDevice device;
