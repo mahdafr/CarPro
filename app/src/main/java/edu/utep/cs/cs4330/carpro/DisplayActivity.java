@@ -3,7 +3,6 @@ package edu.utep.cs.cs4330.carpro;
 import android.annotation.TargetApi;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
-import android.bluetooth.BluetoothProfile;
 import android.bluetooth.BluetoothSocket;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -14,7 +13,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
-import java.util.UUID;
 
 import com.github.pires.obd.commands.SpeedCommand;
 import com.github.pires.obd.commands.protocol.EchoOffCommand;
@@ -51,6 +49,14 @@ public class DisplayActivity extends AppCompatActivity {
         ReadingItemAdapter adapter = new ReadingItemAdapter(this, displayList);
         mListView.setAdapter(adapter);
 
+        new Thread(new Runnable() {
+            public void run() {
+                connectionInitialization();
+            }
+        });
+    }
+
+    private void connectionInitialization() {
         BluetoothAdapter btAdapter = BluetoothAdapter.getDefaultAdapter();
         BluetoothDevice d = btAdapter.getRemoteDevice(getIntent().getStringExtra("DeviceAddress"));
         connection = new ConnectThread(d);
