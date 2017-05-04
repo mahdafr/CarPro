@@ -1,6 +1,6 @@
 /*
  * @created Mahdokht Afravi on 04-25 T
- * @modified 04-25 T
+ * @modified 05-02 T
  */
 
 package edu.utep.cs.cs4330.carpro;
@@ -26,7 +26,7 @@ public class MainActivity extends AppCompatActivity {
     /*
      * The following section is reserved for Android operations: power, discovery, and connectivity
      */
-    /* Creates the IGIVEUPONLIFEivity of CarPro: registers broadcast receiver for bluetooth */
+    /* Creates the MainActivity of CarPro: registers broadcast receiver for bluetooth */
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -36,21 +36,21 @@ public class MainActivity extends AppCompatActivity {
         setUpBluetoothAdapter();
     }
 
-    /* Resumes the IGIVEUPONLIFEivity of CarPro: registers broadcast receiver for bluetooth */
+    /* Resumes the MainActivity of CarPro: registers broadcast receiver for bluetooth */
     @Override
     protected void onResume() {
         super.onResume();
         registerReceiverForBT(); //registers this receiver for bluetooth state changes
     }
 
-    /* Pauses the IGIVEUPONLIFEivity of CarPro: unregisters broadcast receiver for bluetooth */
+    /* Pauses the MainActivity of CarPro: unregisters broadcast receiver for bluetooth */
     @Override
     protected void onPause() {
         super.onPause();
         unregisterReceiver(receiver);
     }
 
-    /* Destroys the IGIVEUPONLIFEivity of CarPro: unregisters broadcast receiver for bluetooth */
+    /* Destroys the MainActivity of CarPro: unregisters broadcast receiver for bluetooth */
     @Override
     protected void onDestroy() {
         super.onDestroy();
@@ -137,9 +137,10 @@ public class MainActivity extends AppCompatActivity {
             toast("No Bluetooth functionality.");
         else {
             listPairedDevices();
-            if ( canConnectTo(deviceNameField.getText().toString()) ) {
-                saveDeviceName(deviceNameField.getText().toString());
-                connectToDevice(deviceNameField.getText().toString());
+            String remoteDevice = deviceNameField.getText().toString();
+            if ( canConnectTo(remoteDevice) ) {
+                saveDeviceName(remoteDevice);
+                connectToDevice(remoteDevice);
             }
         }
     }
@@ -157,7 +158,7 @@ public class MainActivity extends AppCompatActivity {
 
     /* Builds a connection to the remote device for receiving data */
     private void connectToDevice(String name) {
-        //build connection
+        //todo build connection
     }
 
 
