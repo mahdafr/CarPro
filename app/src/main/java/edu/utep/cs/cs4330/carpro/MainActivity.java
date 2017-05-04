@@ -23,6 +23,7 @@ import android.text.method.LinkMovementMethod;
 import android.util.Log;
 import android.view.View;
 import android.widget.ArrayAdapter;
+import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ProgressBar;
 import android.widget.TextView;
@@ -35,9 +36,10 @@ public class MainActivity extends AppCompatActivity {
     java.util.Set<BluetoothDevice> pairedDevices;
     java.util.ArrayList<BluetoothDevice> availableDevices;
     SharedPreferences.Editor editor;
-    private final String LOG_TAG = "testme";
+    private final String LOG_TAG = "woof";
     ProgressBar loadingCircle;
     TextView loadingText;
+    Button butt;
 
     /* ************************************************************************************
        ************************************************************************************ */
@@ -58,6 +60,7 @@ public class MainActivity extends AppCompatActivity {
 
         loadingCircle = (ProgressBar) findViewById(R.id.loadingCircle);
         loadingText = (TextView) findViewById(R.id.loadingText);
+        butt = (Button) findViewById(R.id.butt);
     }
 
     /* Resumes the MainActivity of CarPro: registers broadcast receiver for bluetooth */
@@ -105,6 +108,7 @@ public class MainActivity extends AppCompatActivity {
                 loadingCircle.setVisibility(View.GONE);
                 loadingText.setText("");
                 connectToAvailableDevice();
+                butt.setEnabled(true);
             } else if ( bluetoothAdapter.ACTION_STATE_CHANGED.equals(action) ) {
                 Log.d(LOG_TAG,bluetoothAdapter.getState()+"");
             } else {
@@ -182,13 +186,12 @@ public class MainActivity extends AppCompatActivity {
 
     /* Connects on User command */
     public void connect(android.view.View v) {
+        butt.setEnabled(false);
         Log.d(LOG_TAG,"connect pressed");
         if ( !hasBluetooth() )
             toast("No Bluetooth functionality.");
         else {
             listPairedDevices();
-            loadingCircle.setVisibility(View.VISIBLE);
-            loadingText.setText("Looking for nearby devices...");
             discoverDevices();
         }
     }
@@ -215,17 +218,25 @@ public class MainActivity extends AppCompatActivity {
     /* Builds a connection to the remote device for receiving data */
     private void discoverDevices() {
         Log.d(LOG_TAG,"in connectToDevice...");
-
         getPerm();
-        if ( !bluetoothAdapter.isEnabled() ) bluetoothAdapter.enable();
-        if ( bluetoothAdapter.isDiscovering() ) bluetoothAdapter.cancelDiscovery();
+    }
+
+    /* Start the search for BT devices */
+    private void startLooking() {
+        loadingCircle.setVisibility(View.VISIBLE);
+        loadingText.setText("Looking for nearby devices...");
+
+        if (!bluetoothAdapter.isEnabled()) bluetoothAdapter.enable();
+        if (bluetoothAdapter.isDiscovering()) bluetoothAdapter.cancelDiscovery();
         bluetoothAdapter.startDiscovery(); //start it
-        while ( !bluetoothAdapter.isDiscovering() ) ; //Log.d(LOG_TAG,"not discovering...");
+        while (!bluetoothAdapter.isDiscovering()) ; //Log.d(LOG_TAG,"not discovering...");
         //while ( bluetoothAdapter.isDiscovering() ) ; //Log.d(LOG_TAG,"now discovering...");
     }
 
-    /* Gets user permission on Android 6.x+ */
+    boolean locationPermission;
+    /* Gets user permission on Android 6.0+ */
     private void getPerm() {
+        Log.d(LOG_TAG,"getting dat perm");
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {  // Only ask for these permissions on runtime when running Android 6.0 or higher
             switch (ContextCompat.checkSelfPermission(getBaseContext(), Manifest.permission.ACCESS_COARSE_LOCATION)) {
                 case PackageManager.PERMISSION_DENIED:
@@ -248,10 +259,21 @@ public class MainActivity extends AppCompatActivity {
                             .setMovementMethod(LinkMovementMethod.getInstance());       // Make the link clickable. Needs to be called after show(), in order to generate hyperlinks
                     break;
                 case PackageManager.PERMISSION_GRANTED:
+                    startLooking();
                     break;
             }
         }
+    }
 
+    /* i honestly have no idea what this method is for */
+    @Override
+    public void onRequestPermissionsResult(int reqCode, String perm[], int[] grantRes) {
+        switch ( reqCode ) {
+            case 1: //we made our permission for ACTION_COARSE_LOCATION = 1
+                if ( grantRes.length>0 && grantRes[0]==PackageManager.PERMISSION_GRANTED )
+                    startLooking(); //start the search
+                return;
+        }
     }
 
     /* Got a list of available devices for user to connect to */

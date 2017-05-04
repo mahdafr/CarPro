@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">CarPro</string>
+    <string name="app_name">CarPro: Performance and Diagnostics</string>
     <string name="discover">Discover Available Devices</string>
     <string name="obdii_device_name">Device name</string>
     <string name="title_activity_display">DisplayActivity</string>
