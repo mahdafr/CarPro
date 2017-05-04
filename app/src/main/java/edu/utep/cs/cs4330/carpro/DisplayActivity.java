@@ -26,6 +26,9 @@ public class DisplayActivity extends AppCompatActivity {
     private final String LOG_TAG = "woof";
     private ListView mListView;
     private ConnectThread connection;
+    private ReadingItemAdapter adapter;
+    private ReadingItem RPMitem;
+    private ReadingItem speedItem;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -37,26 +40,29 @@ public class DisplayActivity extends AppCompatActivity {
         String titleItem1 = "Engine RPM";
         String subtitleItem1 = "Engine Revolutions Per Minute";
         String detailItem1 = "RPM: ";
-        ReadingItem item1 = new ReadingItem(titleItem1, subtitleItem1, detailItem1);
-        displayList.add(item1);
+        RPMitem = new ReadingItem(titleItem1, subtitleItem1, detailItem1);
+        displayList.add(RPMitem);
 
         String titleItem2 = "Speed";
         String subtitleItem2 = "Miles Per Hour";
         String detailItem2 = "m/h: ";
-        ReadingItem item2 = new ReadingItem(titleItem2, subtitleItem2, detailItem2);
-        displayList.add(item2);
+        speedItem = new ReadingItem(titleItem2, subtitleItem2, detailItem2);
+        displayList.add(speedItem);
 
-        ReadingItemAdapter adapter = new ReadingItemAdapter(this, displayList);
+        adapter = new ReadingItemAdapter(this, displayList);
         mListView.setAdapter(adapter);
 
         new Thread(new Runnable() {
+            @Override
             public void run() {
                 connectionInitialization();
             }
-        });
+        }).start();
+        Log.d(LOG_TAG, "did thread");
     }
 
     private void connectionInitialization() {
+        Log.d(LOG_TAG, "this is crazy");
         BluetoothAdapter btAdapter = BluetoothAdapter.getDefaultAdapter();
         BluetoothDevice d = btAdapter.getRemoteDevice(getIntent().getStringExtra("DeviceAddress"));
         connection = new ConnectThread(d);
@@ -131,7 +137,7 @@ public class DisplayActivity extends AppCompatActivity {
 
                 new EchoOffCommand().run(input, output);
                 new LineFeedOffCommand().run(input, output);
-                new TimeoutCommand(10).run(input, output);
+                new TimeoutCommand(125).run(input, output);
                 new SelectProtocolCommand(ObdProtocols.AUTO).run(input, output);
 
                 RPMCommand engineRpmCommand = new RPMCommand();
@@ -139,6 +145,17 @@ public class DisplayActivity extends AppCompatActivity {
                 while (!Thread.currentThread().isInterrupted()) {
                     engineRpmCommand.run(input, output);
                     speedCommand.run(input, output);
+
+
+                    RPMitem.setDetails("rpm: "+ engineRpmCommand.getFormattedResult());
+                    speedItem.setDetails("rpm: "+ speedCommand.getFormattedResult());
+                    runOnUiThread(new Runnable(){
+                        @Override
+                        public void run(){
+                            adapter.notifyDataSetChanged();
+
+                        }
+                    });
                     // TODO handle commands result
                     Log.d(LOG_TAG, "RPM: " + engineRpmCommand.getFormattedResult());
                     Log.d(LOG_TAG, "Speed: " + speedCommand.getFormattedResult());
