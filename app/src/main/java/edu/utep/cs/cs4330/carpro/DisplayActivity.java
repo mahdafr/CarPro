@@ -11,6 +11,8 @@ import android.util.Log;
 import android.widget.ListView;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.UUID;
 
@@ -66,27 +68,45 @@ public class DisplayActivity extends AppCompatActivity {
     private class ConnectThread extends Thread {
         private final BluetoothSocket socket;
         private final BluetoothDevice device;
+        private final InputStream input;
+        private final OutputStream output;
+        private byte[] buffer;
 
         @TargetApi(19)
         public ConnectThread(BluetoothDevice d) {
             BluetoothSocket tmp = null;
             device = d;
 
+            // Get the BluetoothSocket upon pairing state achieved.
             try {
                 if ( d.getBondState()!=BluetoothDevice.BOND_BONDED ) {
                     d.createBond();
-                    while (d.getBondState() < BluetoothDevice.BOND_BONDED) ;
+                    while ( d.getBondState()<BluetoothDevice.BOND_BONDED ) ;
                 }
-                Log.d(LOG_TAG,"Trying to connect to: " +d.getName());
                 if ( d.getUuids()[0].getUuid()!=null )
                     tmp = device.createInsecureRfcommSocketToServiceRecord(d.getUuids()[0].getUuid());
-                else
-                    Log.d(LOG_TAG,"UUIDs got errors...");
+                Log.d(LOG_TAG,"Connecting Socket to: " +d.getName());
             } catch (IOException e) {
                 e.printStackTrace();
             }
             socket = tmp;
             Log.d(LOG_TAG,"Socket created");
+
+            // Get the input and output streams.
+            InputStream tmpIn = null;
+            OutputStream tmpOut = null;
+            try {
+                tmpIn = socket.getInputStream();
+            } catch (IOException e) {
+                Log.e(LOG_TAG, "Error occurred when creating input stream", e);
+            }
+            input = tmpIn;
+            try {
+                tmpOut = socket.getOutputStream();
+            } catch (IOException e) {
+                Log.e(LOG_TAG, "Error occurred when creating output stream", e);
+            }
+            output = tmpOut;
         }
 
         /* Starts the connection to OBDII and gives configuration commands */
@@ -98,16 +118,16 @@ public class DisplayActivity extends AppCompatActivity {
                 socket.connect();
                 Log.d(LOG_TAG,"Socket connected to: " +socket.getRemoteDevice().getName());
 
-                new EchoOffCommand().run(socket.getInputStream(), socket.getOutputStream());
-                new LineFeedOffCommand().run(socket.getInputStream(), socket.getOutputStream());
-                new TimeoutCommand(10).run(socket.getInputStream(), socket.getOutputStream());
-                new SelectProtocolCommand(ObdProtocols.AUTO).run(socket.getInputStream(), socket.getOutputStream());
+                new EchoOffCommand().run(input, output);
+                new LineFeedOffCommand().run(input, output);
+                new TimeoutCommand(10).run(input, output);
+                new SelectProtocolCommand(ObdProtocols.AUTO).run(input, output);
 
                 RPMCommand engineRpmCommand = new RPMCommand();
                 SpeedCommand speedCommand = new SpeedCommand();
                 while (!Thread.currentThread().isInterrupted()) {
-                    engineRpmCommand.run(socket.getInputStream(), socket.getOutputStream());
-                    speedCommand.run(socket.getInputStream(), socket.getOutputStream());
+                    engineRpmCommand.run(input, output);
+                    speedCommand.run(input, output);
                     // TODO handle commands result
                     Log.d(LOG_TAG, "RPM: " + engineRpmCommand.getFormattedResult());
                     Log.d(LOG_TAG, "Speed: " + speedCommand.getFormattedResult());
