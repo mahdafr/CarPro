@@ -3,7 +3,6 @@ package edu.utep.cs.cs4330.carpro;
 import android.annotation.TargetApi;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
-import android.bluetooth.BluetoothProfile;
 import android.bluetooth.BluetoothSocket;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -11,26 +10,25 @@ import android.util.Log;
 import android.widget.ListView;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.ArrayList;
-import java.util.UUID;
 
 import com.github.pires.obd.commands.SpeedCommand;
 import com.github.pires.obd.commands.protocol.EchoOffCommand;
 import com.github.pires.obd.commands.protocol.LineFeedOffCommand;
-import com.github.pires.obd.commands.protocol.ObdResetCommand;
 import com.github.pires.obd.commands.protocol.SelectProtocolCommand;
 import com.github.pires.obd.commands.protocol.TimeoutCommand;
-import com.github.pires.obd.commands.ObdCommand;
 import com.github.pires.obd.enums.ObdProtocols;
 import com.github.pires.obd.commands.engine.RPMCommand;
-import com.github.pires.obd.commands.protocol.EchoOffCommand;
 
 public class DisplayActivity extends AppCompatActivity {
     private final String LOG_TAG = "woof";
     private ListView mListView;
     private ConnectThread connection;
-    private ReadingItem item1;
-    private ReadingItem item2;
+    private ReadingItemAdapter adapter;
+    private ReadingItem RPMitem;
+    private ReadingItem speedItem;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -42,29 +40,31 @@ public class DisplayActivity extends AppCompatActivity {
         String titleItem1 = "Engine RPM";
         String subtitleItem1 = "Engine Revolutions Per Minute";
         String detailItem1 = "RPM: ";
-        item1 = new ReadingItem(titleItem1, subtitleItem1, detailItem1);
-        displayList.add(item1);
+        RPMitem = new ReadingItem(titleItem1, subtitleItem1, detailItem1);
+        displayList.add(RPMitem);
 
         String titleItem2 = "Speed";
         String subtitleItem2 = "Miles Per Hour";
         String detailItem2 = "m/h: ";
-        item2 = new ReadingItem(titleItem2, subtitleItem2, detailItem2);
-        displayList.add(item2);
+        speedItem = new ReadingItem(titleItem2, subtitleItem2, detailItem2);
+        displayList.add(speedItem);
 
-        ReadingItemAdapter adapter = new ReadingItemAdapter(this, displayList);
+        adapter = new ReadingItemAdapter(this, displayList);
         mListView.setAdapter(adapter);
 
         new Thread(new Runnable() {
+            @Override
             public void run() {
                 connectionInitialization();
             }
         }).start();
+        Log.d(LOG_TAG, "did thread");
     }
 
     private void connectionInitialization() {
+        Log.d(LOG_TAG, "this is crazy");
         BluetoothAdapter btAdapter = BluetoothAdapter.getDefaultAdapter();
         BluetoothDevice d = btAdapter.getRemoteDevice(getIntent().getStringExtra("DeviceAddress"));
-
         connection = new ConnectThread(d);
         connection.run();
     }
@@ -76,31 +76,54 @@ public class DisplayActivity extends AppCompatActivity {
         connection.cancel();
     }
 
-    /* Thread to maintain the connection to OBDII */
+
+    /* ************************************************************************************
+       ************************************************************************************ */
+    /*
+     * The following section is the private class for maintaing the bluetooth connection.
+     */
     private class ConnectThread extends Thread {
         private final BluetoothSocket socket;
         private final BluetoothDevice device;
+        private final InputStream input;
+        private final OutputStream output;
+        private byte[] buffer;
 
         @TargetApi(19)
         public ConnectThread(BluetoothDevice d) {
             BluetoothSocket tmp = null;
             device = d;
 
+            // Get the BluetoothSocket upon pairing state achieved.
             try {
-                if (d.getBondState() != BluetoothDevice.BOND_BONDED) {
+                if ( d.getBondState()!=BluetoothDevice.BOND_BONDED ) {
                     d.createBond();
-                    while (d.getBondState() < BluetoothDevice.BOND_BONDED) ;
+                    while ( d.getBondState()<BluetoothDevice.BOND_BONDED ) ;
                 }
-                Log.d(LOG_TAG, "Trying to connect to: " + d.getName());
-                if (d.getUuids()[0].getUuid() != null)
+                if ( d.getUuids()[0].getUuid()!=null )
                     tmp = device.createInsecureRfcommSocketToServiceRecord(d.getUuids()[0].getUuid());
-                else
-                    Log.d(LOG_TAG, "UUIDs got errors...");
+                Log.d(LOG_TAG,"Connecting Socket to: " +d.getName());
             } catch (IOException e) {
                 e.printStackTrace();
             }
             socket = tmp;
-            Log.d(LOG_TAG, "Socket created");
+            Log.d(LOG_TAG,"Socket created");
+
+            // Get the input and output streams.
+            InputStream tmpIn = null;
+            OutputStream tmpOut = null;
+            try {
+                tmpIn = socket.getInputStream();
+            } catch (IOException e) {
+                Log.e(LOG_TAG, "Error occurred when creating input stream", e);
+            }
+            input = tmpIn;
+            try {
+                tmpOut = socket.getOutputStream();
+            } catch (IOException e) {
+                Log.e(LOG_TAG, "Error occurred when creating output stream", e);
+            }
+            output = tmpOut;
         }
 
         /* Starts the connection to OBDII and gives configuration commands */
@@ -110,22 +133,30 @@ public class DisplayActivity extends AppCompatActivity {
                 // Connect to the remote device through the socket. This call blocks
                 // until it succeeds or throws an exception.
                 socket.connect();
-                Log.d(LOG_TAG, "Socket connected to: " + socket.getRemoteDevice().getName());
+                Log.d(LOG_TAG,"Socket connected to: " +socket.getRemoteDevice().getName());
 
-                new ObdResetCommand().run(socket.getInputStream(), socket.getOutputStream());
-                new EchoOffCommand().run(socket.getInputStream(), socket.getOutputStream());
-                new LineFeedOffCommand().run(socket.getInputStream(), socket.getOutputStream());
-                new TimeoutCommand(125).run(socket.getInputStream(), socket.getOutputStream());
-                new SelectProtocolCommand(ObdProtocols.AUTO).run(socket.getInputStream(), socket.getOutputStream());
+                new EchoOffCommand().run(input, output);
+                new LineFeedOffCommand().run(input, output);
+                new TimeoutCommand(125).run(input, output);
+                new SelectProtocolCommand(ObdProtocols.AUTO).run(input, output);
 
                 RPMCommand engineRpmCommand = new RPMCommand();
                 SpeedCommand speedCommand = new SpeedCommand();
                 while (!Thread.currentThread().isInterrupted()) {
-                    engineRpmCommand.run(socket.getInputStream(), socket.getOutputStream());
-                    speedCommand.run(socket.getInputStream(), socket.getOutputStream());
+                    engineRpmCommand.run(input, output);
+                    speedCommand.run(input, output);
+
+
+                    RPMitem.setDetails("rpm: "+ engineRpmCommand.getFormattedResult());
+                    speedItem.setDetails("rpm: "+ speedCommand.getFormattedResult());
+                    runOnUiThread(new Runnable(){
+                        @Override
+                        public void run(){
+                            adapter.notifyDataSetChanged();
+
+                        }
+                    });
                     // TODO handle commands result
-                    item1.setDescription("rpm: " + engineRpmCommand.getFormattedResult());
-                    item2.setDescription("m/p: " + speedCommand.getFormattedResult());
                     Log.d(LOG_TAG, "RPM: " + engineRpmCommand.getFormattedResult());
                     Log.d(LOG_TAG, "Speed: " + speedCommand.getFormattedResult());
                 }
@@ -136,8 +167,7 @@ public class DisplayActivity extends AppCompatActivity {
                     Log.e(LOG_TAG, "Could not close the client socket", closeException);
                 }
                 return;
-            } catch (java.lang.InterruptedException e) {
-            }
+            } catch ( java.lang.InterruptedException e ) { }
 
             // The connection attempt succeeded. Perform work associated with
             // the connection in a separate thread.
