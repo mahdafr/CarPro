@@ -254,8 +254,9 @@ public class MainActivity extends AppCompatActivity {
 
     /* Got a list of available devices for user to connect to */
     private void connectToAvailableDevice() {
-        // show list of available devices
+        // show list of available devices and combine it with the paired devices
         getAvailableDevices();
+        getPairedDevices();
         final AlertDialog.Builder alertDialog = new AlertDialog.Builder(this);
         ArrayAdapter adapter = new ArrayAdapter(this, android.R.layout.select_dialog_singlechoice,
                 deviceStrs);
@@ -264,9 +265,11 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(DialogInterface dialog, int which) {
                 dialog.dismiss();
-                int position = ((AlertDialog) dialog).getListView().getCheckedItemPosition();
-                //String deviceAddress = availableDevices.get(position).getAddress();
-                startActivity(availableDevices.get(position).getAddress());
+                int pos = ((AlertDialog) dialog).getListView().getCheckedItemPosition();
+                if ( pos<availableDevices.size() )
+                    startActivity(availableDevices.get(pos).getAddress());
+                else
+                    startActivity(getRemoteFromPaired(pos));
             }
         });
         alertDialog.setTitle("Choose Bluetooth device");
@@ -296,14 +299,39 @@ public class MainActivity extends AppCompatActivity {
             Log.d(LOG_TAG,"Bonded with: " +d.getName());
     }
 
-    /* Populates the adapter for the list of paired devices for connection */
+    /* Populates the adapter for the list of available devices for connection */
     private void getAvailableDevices() {
         Log.d(LOG_TAG,"Size of availableDevices: " +availableDevices.size());
         for ( BluetoothDevice d : availableDevices ) {
+            if ( deviceStrs.contains(d.getName()) || deviceStrs.contains(d.getAddress()) )
+                return; //not adding duplicates
             if ( d.getName()!=null )
                 deviceStrs.add(d.getName());
             else
                 deviceStrs.add(d.getAddress());
         }
+    }
+
+    /* Populates the adapter for the list of paired devices for connection */
+    private void getPairedDevices() {
+        Log.d(LOG_TAG,"Size of pairedDevices: " +pairedDevices.size());
+        for ( BluetoothDevice d : pairedDevices ) {
+            if ( deviceStrs.contains(d.getName()) || deviceStrs.contains(d.getAddress()) )
+                return; //not adding duplicates
+            if ( d.getName()!=null )
+                deviceStrs.add(d.getName());
+            else
+                deviceStrs.add(d.getAddress());
+        }
+    }
+
+    /* Calculates the index at which the device chosen for connection */
+    private String getRemoteFromPaired(int pos) {
+        int index = pos - availableDevices.size();
+        int i = 0;
+        for ( BluetoothDevice d : pairedDevices )
+            if ( i==index )
+                return d.getAddress();
+        return "";
     }
 }

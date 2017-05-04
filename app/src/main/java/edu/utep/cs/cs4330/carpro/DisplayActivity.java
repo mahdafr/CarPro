@@ -7,11 +7,9 @@ import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
 import android.widget.ListView;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.UUID;
-
 import com.github.pires.obd.commands.protocol.EchoOffCommand;
 import com.github.pires.obd.commands.protocol.LineFeedOffCommand;
 import com.github.pires.obd.commands.protocol.SelectProtocolCommand;
@@ -28,7 +26,6 @@ public class DisplayActivity extends AppCompatActivity {
         setContentView(R.layout.activity_display);
 
         String address = getIntent().getStringExtra("DeviceAddress");
-
         mListView = (ListView) findViewById(R.id.recipe_list_view);
 
 // 1
@@ -48,6 +45,7 @@ public class DisplayActivity extends AppCompatActivity {
         // Create socket between device
         BluetoothAdapter btAdapter = BluetoothAdapter.getDefaultAdapter();
         BluetoothDevice device = btAdapter.getRemoteDevice(address);
+        Log.d(LOG_TAG,"Remote: " +device.getName());
         UUID uuid = UUID.randomUUID();
         BluetoothSocket socket = null;
         Log.d(LOG_TAG,"made the socket");
@@ -56,22 +54,16 @@ public class DisplayActivity extends AppCompatActivity {
             Log.d(LOG_TAG,"in the try");
             socket = device.createInsecureRfcommSocketToServiceRecord(uuid);
             socket.connect();
-            
             Log.d(LOG_TAG,"connected");
 
             new EchoOffCommand().run(socket.getInputStream(), socket.getOutputStream());
-
             new LineFeedOffCommand().run(socket.getInputStream(), socket.getOutputStream());
-
             new TimeoutCommand(10).run(socket.getInputStream(), socket.getOutputStream());
-
             new SelectProtocolCommand(ObdProtocols.AUTO).run(socket.getInputStream(), socket.getOutputStream());
-
         } catch (IOException e){
             e.printStackTrace();
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
-
     }
 }
