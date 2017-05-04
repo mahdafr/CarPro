@@ -17,10 +17,13 @@ import java.util.ArrayList;
 import com.github.pires.obd.commands.SpeedCommand;
 import com.github.pires.obd.commands.protocol.EchoOffCommand;
 import com.github.pires.obd.commands.protocol.LineFeedOffCommand;
+import com.github.pires.obd.commands.protocol.ObdResetCommand;
 import com.github.pires.obd.commands.protocol.SelectProtocolCommand;
 import com.github.pires.obd.commands.protocol.TimeoutCommand;
 import com.github.pires.obd.enums.ObdProtocols;
 import com.github.pires.obd.commands.engine.RPMCommand;
+import com.github.pires.obd.commands.control.PendingTroubleCodesCommand;
+import com.github.pires.obd.commands.fuel.ConsumptionRateCommand;
 
 public class DisplayActivity extends AppCompatActivity {
     private final String LOG_TAG = "woof";
@@ -29,6 +32,8 @@ public class DisplayActivity extends AppCompatActivity {
     private ReadingItemAdapter adapter;
     private ReadingItem RPMitem;
     private ReadingItem speedItem;
+    private ReadingItem codeItem;
+    private ReadingItem fuelItem;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -49,7 +54,20 @@ public class DisplayActivity extends AppCompatActivity {
         speedItem = new ReadingItem(titleItem2, subtitleItem2, detailItem2);
         displayList.add(speedItem);
 
+        String titleItem3 = "Error Code";
+        String subtitleItem3 = "Possible Error Code:";
+        String detailItem3 = "";
+        codeItem = new ReadingItem(titleItem3, subtitleItem3, detailItem3);
+        displayList.add(codeItem);
         adapter = new ReadingItemAdapter(this, displayList);
+
+        String titleItem4 = "Error Code";
+        String subtitleItem4 = "Possible Error Code:";
+        String detailItem4 = "";
+        fuelItem = new ReadingItem(titleItem4, subtitleItem4, detailItem4);
+        displayList.add(fuelItem);
+        adapter = new ReadingItemAdapter(this, displayList);
+
         mListView.setAdapter(adapter);
 
         new Thread(new Runnable() {
@@ -87,7 +105,6 @@ public class DisplayActivity extends AppCompatActivity {
         private final BluetoothDevice device;
         private final InputStream input;
         private final OutputStream output;
-        private byte[] buffer;
 
         @TargetApi(19)
         public ConnectThread(BluetoothDevice d) {
@@ -135,20 +152,29 @@ public class DisplayActivity extends AppCompatActivity {
                 socket.connect();
                 Log.d(LOG_TAG,"Socket connected to: " +socket.getRemoteDevice().getName());
 
+                new ObdResetCommand().run(input,output);
+                new SelectProtocolCommand(ObdProtocols.AUTO).run(input, output);
                 new EchoOffCommand().run(input, output);
                 new LineFeedOffCommand().run(input, output);
                 new TimeoutCommand(125).run(input, output);
-                new SelectProtocolCommand(ObdProtocols.AUTO).run(input, output);
+                new PendingTroubleCodesCommand().run(input, output);
+                new ConsumptionRateCommand().run(input, output);
 
                 RPMCommand engineRpmCommand = new RPMCommand();
                 SpeedCommand speedCommand = new SpeedCommand();
+                PendingTroubleCodesCommand codeCommand = new PendingTroubleCodesCommand();
+                ConsumptionRateCommand fuelCommand = new ConsumptionRateCommand();
+
                 while (!Thread.currentThread().isInterrupted()) {
                     engineRpmCommand.run(input, output);
                     speedCommand.run(input, output);
 
 
-                    RPMitem.setDetails("rpm: "+ engineRpmCommand.getFormattedResult());
-                    speedItem.setDetails("rpm: "+ speedCommand.getFormattedResult());
+                    RPMitem.setDetails(engineRpmCommand.getFormattedResult());
+                    speedItem.setDetails(speedCommand.getFormattedResult());
+                    codeItem.setDetails(codeCommand.getFormattedResult());
+                    fuelItem.setDetails(fuelCommand.getFormattedResult());
+
                     runOnUiThread(new Runnable(){
                         @Override
                         public void run(){
