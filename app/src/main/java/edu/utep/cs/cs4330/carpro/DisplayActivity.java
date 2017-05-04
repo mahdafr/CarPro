@@ -5,6 +5,7 @@ import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothSocket;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.util.Log;
 import android.widget.ListView;
 
 import java.io.IOException;
@@ -18,13 +19,15 @@ import com.github.pires.obd.commands.protocol.TimeoutCommand;
 import com.github.pires.obd.enums.ObdProtocols;
 
 public class DisplayActivity extends AppCompatActivity {
-
+    private final String LOG_TAG = "woof";
     private ListView mListView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_display);
+
+        String address = getIntent().getStringExtra("DeviceAddress");
 
         mListView = (ListView) findViewById(R.id.recipe_list_view);
 
@@ -44,15 +47,17 @@ public class DisplayActivity extends AppCompatActivity {
 
         // Create socket between device
         BluetoothAdapter btAdapter = BluetoothAdapter.getDefaultAdapter();
-
-        BluetoothDevice device = btAdapter.getRemoteDevice(deviceAddress);
-
+        BluetoothDevice device = btAdapter.getRemoteDevice(address);
         UUID uuid = UUID.randomUUID();
         BluetoothSocket socket = null;
+        Log.d(LOG_TAG,"made the socket");
 
-        try{
+        try {
+            Log.d(LOG_TAG,"in the try");
             socket = device.createInsecureRfcommSocketToServiceRecord(uuid);
             socket.connect();
+            
+            Log.d(LOG_TAG,"connected");
 
             new EchoOffCommand().run(socket.getInputStream(), socket.getOutputStream());
 
@@ -62,8 +67,7 @@ public class DisplayActivity extends AppCompatActivity {
 
             new SelectProtocolCommand(ObdProtocols.AUTO).run(socket.getInputStream(), socket.getOutputStream());
 
-        }
-        catch (IOException e){
+        } catch (IOException e){
             e.printStackTrace();
         } catch (InterruptedException e) {
             e.printStackTrace();
