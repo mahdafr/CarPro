@@ -24,6 +24,7 @@ import com.github.pires.obd.enums.ObdProtocols;
 import com.github.pires.obd.commands.engine.RPMCommand;
 import com.github.pires.obd.commands.control.PendingTroubleCodesCommand;
 import com.github.pires.obd.commands.fuel.ConsumptionRateCommand;
+import com.github.pires.obd.commands.engine.RuntimeCommand;
 
 public class DisplayActivity extends AppCompatActivity {
     private final String LOG_TAG = "woof";
@@ -33,7 +34,7 @@ public class DisplayActivity extends AppCompatActivity {
     private ReadingItem RPMitem;
     private ReadingItem speedItem;
     private ReadingItem codeItem;
-    private ReadingItem fuelItem;
+    private ReadingItem timeItem;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -49,8 +50,8 @@ public class DisplayActivity extends AppCompatActivity {
         displayList.add(RPMitem);
 
         String titleItem2 = "Speed";
-        String subtitleItem2 = "Miles Per Hour";
-        String detailItem2 = "m/h: ";
+        String subtitleItem2 = "Kilometers Per Hour";
+        String detailItem2 = "km/h: ";
         speedItem = new ReadingItem(titleItem2, subtitleItem2, detailItem2);
         displayList.add(speedItem);
 
@@ -59,13 +60,12 @@ public class DisplayActivity extends AppCompatActivity {
         String detailItem3 = "";
         codeItem = new ReadingItem(titleItem3, subtitleItem3, detailItem3);
         displayList.add(codeItem);
-        adapter = new ReadingItemAdapter(this, displayList);
 
-        String titleItem4 = "Error Code";
-        String subtitleItem4 = "Possible Error Code:";
+        String titleItem4 = "Engine runtime";
+        String subtitleItem4 = "How long engine has been running";
         String detailItem4 = "";
-        fuelItem = new ReadingItem(titleItem4, subtitleItem4, detailItem4);
-        displayList.add(fuelItem);
+        timeItem = new ReadingItem(titleItem4, subtitleItem4, detailItem4);
+        displayList.add(timeItem);
         adapter = new ReadingItemAdapter(this, displayList);
 
         mListView.setAdapter(adapter);
@@ -156,35 +156,43 @@ public class DisplayActivity extends AppCompatActivity {
                 new SelectProtocolCommand(ObdProtocols.AUTO).run(input, output);
                 new EchoOffCommand().run(input, output);
                 new LineFeedOffCommand().run(input, output);
-                new TimeoutCommand(125).run(input, output);
-                new PendingTroubleCodesCommand().run(input, output);
-                new ConsumptionRateCommand().run(input, output);
-
+                new TimeoutCommand(225).run(input, output);
+//
                 RPMCommand engineRpmCommand = new RPMCommand();
+
                 SpeedCommand speedCommand = new SpeedCommand();
                 PendingTroubleCodesCommand codeCommand = new PendingTroubleCodesCommand();
-                ConsumptionRateCommand fuelCommand = new ConsumptionRateCommand();
+                RuntimeCommand timeCommand = new RuntimeCommand();
 
                 while (!Thread.currentThread().isInterrupted()) {
-                    engineRpmCommand.run(input, output);
-                    speedCommand.run(input, output);
+                    try{
+                        engineRpmCommand.run(input, output);
+                        speedCommand.run(input, output);
+                        codeCommand.run(input, output);
+                        timeCommand.run(input, output);
+
+                        RPMitem.setDetails(engineRpmCommand.getFormattedResult());
+                        speedItem.setDetails(speedCommand.getFormattedResult());
+                        codeItem.setDetails(codeCommand.getFormattedResult());
+                        timeItem.setDetails(timeCommand.getFormattedResult());
+
+                        runOnUiThread(new Runnable(){
+                            @Override
+                            public void run(){
+                                adapter.notifyDataSetChanged();
+
+                            }
+                        });
+                        // TODO handle commands result
+                        Log.d(LOG_TAG, "RPM: " + engineRpmCommand.getFormattedResult());
+//                    Log.d(LOG_TAG, "Speed: " + speedCommand.getFormattedResult());
+
+                    }
+                    catch (com.github.pires.obd.exceptions.UnknownErrorException e){
+                        Log.d(LOG_TAG, "ignoring unknown error");
+                    }
 
 
-                    RPMitem.setDetails(engineRpmCommand.getFormattedResult());
-                    speedItem.setDetails(speedCommand.getFormattedResult());
-                    codeItem.setDetails(codeCommand.getFormattedResult());
-                    fuelItem.setDetails(fuelCommand.getFormattedResult());
-
-                    runOnUiThread(new Runnable(){
-                        @Override
-                        public void run(){
-                            adapter.notifyDataSetChanged();
-
-                        }
-                    });
-                    // TODO handle commands result
-                    Log.d(LOG_TAG, "RPM: " + engineRpmCommand.getFormattedResult());
-                    Log.d(LOG_TAG, "Speed: " + speedCommand.getFormattedResult());
                 }
             } catch (IOException connectException) {
                 try {

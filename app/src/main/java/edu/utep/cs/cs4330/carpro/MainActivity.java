@@ -200,6 +200,7 @@ public class MainActivity extends AppCompatActivity {
     private void startActivity(String addr) {
         Intent intent = new Intent(this, DisplayActivity.class);
         intent.putExtra("DeviceAddress",addr);
+//        finish(); //Fixme fix ondestroy
         startActivity(intent);
     }
 
