@@ -7,8 +7,7 @@
 
     <EditText
         android:id="@+id/deviceNameField"
-        android:text="@string/obdii_device_name"
-        android:gravity="center"
+        android:hint="Device Name"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_centerInParent="true"

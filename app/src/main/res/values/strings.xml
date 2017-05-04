@@ -1,5 +1,7 @@
 <resources>
     <string name="app_name">CarPro</string>
     <string name="connect">Connect</string>
-    <string name="obdii_device_name">device name</string>
+    <string name="obdii_device_name">Device name</string>
+    <string name="title_activity_display">DisplayActivity</string>
+>>>>>>> 87cbea21201dad53c519b7b6127b884514015266
 </resources>
