@@ -5,19 +5,37 @@
     android:layout_height="match_parent"
     tools:context="edu.utep.cs.cs4330.carpro.MainActivity">
 
-    <EditText
-        android:id="@+id/deviceNameField"
-        android:hint="Device Name"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_centerInParent="true"
-        android:layout_above="@+id/butt1"/>
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
 
-    <Button
-        android:id="@+id/butt1"
-        android:text="@string/connect"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_centerInParent="true"
-        android:onClick="connect"/>
+        <Button
+            android:id="@+id/butt"
+            android:text="@string/discover"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerInParent="true"
+            android:onClick="connect" />
+
+        <TextView
+            android:id="@+id/loadingText"
+            android:layout_below="@id/butt"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerHorizontal="true"/>
+
+        <ProgressBar
+            android:id="@+id/loadingCircle"
+            style="?android:attr/progressBarStyle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:visibility="gone"
+            android:layout_below="@id/loadingText"
+            android:layout_centerHorizontal="true"
+            />
+
+
+
+    </RelativeLayout>
+
 </RelativeLayout>
